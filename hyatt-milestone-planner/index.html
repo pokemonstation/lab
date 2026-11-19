@@ -24,6 +24,7 @@
   --gold-bg: #FBEFD9;
   --ring: rgba(168, 95, 0, .45);
   --ring-a: rgba(10, 122, 116, .45);
+  --good: #176B3F; --good-bg: #DDF3E6; --bad: #A8231B; --bad-bg: #FBE4E2;
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -31,14 +32,14 @@
   :root:not([data-theme="light"]) {
     --bg: #0D141B; --surface: #15202A; --surface2: #1D2B37; --ink: #E6EDF2; --muted: #94A5B2;
     --line: #2A3946; --accent: #3CC2B8; --accent-ink: #06201E; --accent-bg: #143531;
-    --gold: #F0B454; --gold-bg: #2C2312; --ring: rgba(240, 180, 84, .5); --ring-a: rgba(60, 194, 184, .5);
+    --gold: #F0B454; --gold-bg: #2C2312; --ring: rgba(240, 180, 84, .5); --ring-a: rgba(60, 194, 184, .5); --good: #62D393; --good-bg: #12301F; --bad: #FF9A92; --bad-bg: #3A1E1C;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0D141B; --surface: #15202A; --surface2: #1D2B37; --ink: #E6EDF2; --muted: #94A5B2;
   --line: #2A3946; --accent: #3CC2B8; --accent-ink: #06201E; --accent-bg: #143531;
-  --gold: #F0B454; --gold-bg: #2C2312; --ring: rgba(240, 180, 84, .5); --ring-a: rgba(60, 194, 184, .5);
+  --gold: #F0B454; --gold-bg: #2C2312; --ring: rgba(240, 180, 84, .5); --ring-a: rgba(60, 194, 184, .5); --good: #62D393; --good-bg: #12301F; --bad: #FF9A92; --bad-bg: #3A1E1C;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -154,6 +155,35 @@ h1 { font-family: var(--font-display); font-size: 1.55rem; line-height: 1.15; ma
 @keyframes bump { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
 .none { color: var(--muted); padding: 10px 0 2px; }
 
+/* tabs + summary */
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; background: transparent; padding: 9px 16px; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.sumbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.lg { font-size: .78rem; font-weight: 600; border-radius: 99px; padding: 3px 11px; }
+.lg.new, .pill.new { background: var(--good-bg); color: var(--good); }
+.lg.rem, .pill.rem { background: var(--bad-bg); color: var(--bad); }
+.lg.chg, .pill.chg { background: var(--gold-bg); color: var(--gold); }
+.lg.same { background: var(--surface2); color: var(--muted); }
+.pill { display: inline-block; font-size: .65rem; font-weight: 700; border-radius: 99px; padding: 1px 7px; margin-left: 6px; text-transform: uppercase; letter-spacing: .04em; vertical-align: middle; }
+table.sum { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.sum th, .sum td { padding: 8px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.sum thead th { position: sticky; top: 0; z-index: 2; background: var(--surface2); font-family: var(--font-display); }
+.sum tr.sec th { background: var(--ink); color: var(--bg); font-family: var(--font-display); letter-spacing: .02em; }
+.sum tr.mh th { background: var(--surface2); font-family: var(--font-display); font-size: 1rem; }
+.sum tr.mh th small { font-family: var(--font-body); font-weight: 400; color: var(--muted); font-size: .78rem; }
+.sum td.lab { font-weight: 600; }
+.sum td.new { background: var(--good-bg); }
+.sum td.rem { background: var(--bad-bg); }
+.sum td.chg { background: var(--gold-bg); }
+.sum td.none { color: var(--muted); }
+.sum .v { font-weight: 600; }
+.sum .tg { display: block; font-size: .7rem; color: var(--muted); }
+.sum .tg.inc { color: var(--accent); }
+.sum td.new .tg.inc, .sum td.rem .tg.inc, .sum td.chg .tg.inc { color: inherit; opacity: .8; }
+
 /* info dialog */
 .veil { position: fixed; inset: 0; background: rgba(5, 10, 15, .6); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
 .dlg { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; max-width: 580px; width: 100%; max-height: 86vh; overflow: auto; padding: 18px; }
@@ -207,7 +237,7 @@ h1 { font-family: var(--font-display); font-size: 1.55rem; line-height: 1.15; ma
   <header>
     <h1>Hyatt Milestone Planner</h1>
     <div class="hbtns">
-      <div class="seg" role="group" aria-label="Rule set">
+      <div class="seg" id="seg" role="group" aria-label="Rule set">
         <button id="r2026" type="button" aria-pressed="false">2026</button>
         <button id="r2027" type="button" aria-pressed="true">2027</button>
       </div>
@@ -217,6 +247,12 @@ h1 { font-family: var(--font-display); font-size: 1.55rem; line-height: 1.15; ma
     </div>
   </header>
 
+  <div class="tabs" role="tablist">
+    <button id="tabPlan" type="button" role="tab" aria-selected="true">Planner</button>
+    <button id="tabSum" type="button" role="tab" aria-selected="false">Summary</button>
+  </div>
+
+  <div id="planner" class="stack">
   <div class="prog" aria-hidden="true"><i id="progbar"></i></div>
   <div id="track" class="track"></div>
 
@@ -233,6 +269,9 @@ h1 { font-family: var(--font-display); font-size: 1.55rem; line-height: 1.15; ma
     <section id="panel" class="card" aria-live="polite"></section>
     <aside class="card haul" id="haul"></aside>
   </div>
+  </div>
+
+  <section id="summary" class="stack" hidden></section>
 </div>
 
 <div id="veil" class="veil" hidden>
@@ -606,7 +645,7 @@ $('#gift').addEventListener('change', e => { gift = e.target.checked; render(); 
 $('#cc').addEventListener('change', e => { cardOn = e.target.checked; render(); });
 
 /* info dialog: explicit Close only, ESC acts as Close */
-const APP_VERSION = '1.4', APP_UPDATED = 'November 19, 2026';
+const APP_VERSION = '1.5', APP_UPDATED = 'November 19, 2026';
 const DIALOGS = {
   info: {
     title: 'Notes',
@@ -639,6 +678,7 @@ const DIALOGS = {
         '<li>Click a claimed tile to change its picks. The haul and nights update right away.</li>' +
         '<li>Undo only re-locks. It locks the latest milestone again and clears its picks. Reset clears everything (tap twice).</li>' +
         '<li>2026 and 2027 swap the rule set. Your picks clear when you switch.</li>' +
+        '<li>The Summary tab lines up 2026 and 2027 side by side. Green is new, red is gone, amber is changed. Turn on Changes only to hide the rest.</li>' +
       '</ul>' +
       '<h3>Reading the numbers</h3>' +
       '<ul>' +
@@ -673,6 +713,119 @@ function closeDlg() { $('#veil').hidden = true; if (dlgOpener) dlgOpener.focus()
 $('#dlgclose').addEventListener('click', closeDlg);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#veil').hidden) closeDlg(); });
 
+/* ---------- summary tab ---------- */
+const STYPES = [['tqn', 'Night credits'], ['goh', 'Guest of Honor'], ['fn14', 'Cat 1-4 free night'], ['fn17', 'Cat 1-7 free night'], ['fnU', 'Ultimate free night'],
+  ['su', 'Suite Upgrade'], ['pts', 'Bonus points'], ['next2k', '2K Next Stay'], ['club', 'Club Lounge Access'], ['park', 'Free Parking Award'],
+  ['conc', 'My Hyatt Concierge'], ['miraval', 'Miraval Extra Night'], ['sky', 'Sky Club passes'], ['premium', 'Premium Suite credit'],
+  ['find', 'FIND credit'], ['spa', 'Spa credit'], ['thompson', 'Thompson credit'], ['ecert', 'Delta eCert'],
+  ['aapref', 'AA Preferred Seat coupons'], ['aamce', 'AA Main Cabin Extra coupons'], ['status', 'Airline status'], ['ref20', 'Any 20-night award']];
+const GEN = [
+  { sec: 'Status', rows: [
+    ['Discoverist', '10 nights or 25,000 base points', '10 nights or 25,000 base points'],
+    ['Explorist', '30 nights or 50,000 base points', '30 nights or 50,000 base points'],
+    ['Globalist', '60 nights or 100,000 base points', '60 nights or 100,000 base points'],
+    ['Globalist free parking on free nights', 'Included', 'Removed. Kept until Feb 29, 2028 if you hold Globalist on 12/31/2026.', 'rem'],
+    ['Lifetime Globalist', '4 upgrades, 5 Guest of Honor, 1 Cat 1-7 free night a year', '4 upgrades, 5 Guest of Honor, 1 Cat 1-7 free night a year']
+  ] },
+  { sec: 'Program rules', rows: [
+    ['First milestone', '20 nights', '10 nights'],
+    ['Free night award validity', '180 days', '365 days'],
+    ['Other award validity', 'End of the earning year plus 14 months', '365 days from issue'],
+    ['Stacking awards', 'Limited by exclusions', 'Allowed on one confirmation number'],
+    ['Guest of Honor on milestone free nights', 'Not allowed on Cat 1-4, Cat 1-7 or Ultimate', 'Any free night award (exclusion list dropped)'],
+    ['Airline partner', 'American Airlines', 'Delta Air Lines']
+  ] }
+];
+const PILL = { new: 'New', rem: 'Removed', chg: 'Changed' };
+let onlyChg = false;
+
+function sumVal(it) {
+  const k = it[0], n = it[1];
+  if (k === 'pts') return fmt(n) + ' pts';
+  if (k === 'next2k') return '2,000 pts';
+  if (k === 'find' || k === 'spa' || k === 'thompson' || k === 'premium' || k === 'ecert') return '$' + fmt(n);
+  if (k === 'status') return n;
+  if (k === 'conc') return 'Yes';
+  return String(n);
+}
+function sumEntries(m) {
+  const out = {};
+  const add = (k, e) => { (out[k] = out[k] || []).push(e); };
+  if (!m) return out;
+  (m.fixed || []).forEach(it => add(it[0], { t: sumVal(it), mode: 'incl', tag: 'Included' }));
+  m.groups.forEach(g => {
+    if (/^Plus any 20/.test(g.title)) { add('ref20', { t: 'Yes', mode: 'pick', tag: 'Pick 1' }); return; }
+    g.opts.forEach(op => op.items.forEach(it => add(it[0], { t: sumVal(it), mode: 'pick', tag: 'Pick ' + g.pick + ' of ' + g.opts.length })));
+  });
+  return out;
+}
+const sig = e => e.map(z => z.t + '|' + z.mode).join(';');
+function sumCell(e, cls, ph) {
+  if (!e) return '<td class="none">' + ph + '</td>';
+  return '<td class="' + cls + '">' + e.map(z => '<span class="v">' + z.t + '</span><span class="tg' + (z.mode === 'incl' ? ' inc' : '') + '">' + z.tag + '</span>').join('') + '</td>';
+}
+function sumRow(label, x, y, st) {
+  return '<tr><td class="lab">' + label + (st !== 'same' ? '<span class="pill ' + st + '">' + PILL[st] + '</span>' : '') + '</td>' +
+    sumCell(x, st === 'rem' ? 'rem' : st === 'chg' ? 'chg' : '', '—') +
+    sumCell(y, st === 'new' ? 'new' : st === 'chg' ? 'chg' : '', st === 'rem' ? 'Gone' : '—') + '</tr>';
+}
+function renderSummary() {
+  const A = build('2026'), B = build('2027');
+  const ns = Array.from(new Set(A.map(m => m.n).concat(B.map(m => m.n)))).sort((a, b) => a - b);
+  const cnt = { new: 0, rem: 0, chg: 0, same: 0 };
+  let ms = '';
+  ns.forEach(n => {
+    const ma = A.find(m => m.n === n), mb = B.find(m => m.n === n);
+    const ea = sumEntries(ma), eb = sumEntries(mb);
+    let rows = '';
+    STYPES.forEach(([k, label]) => {
+      const x = ea[k], y = eb[k];
+      if (!x && !y) return;
+      const st = x && !y ? 'rem' : !x && y ? 'new' : sig(x) === sig(y) ? 'same' : 'chg';
+      cnt[st]++;
+      if (onlyChg && st === 'same') return;
+      rows += sumRow(label, x, y, st);
+    });
+    if (!rows) return;
+    const bp = (mb || ma).bp;
+    ms += '<tr class="mh"><th colspan="3">' + n + ' nights' + (bp ? '<small> or ' + bp + ' base points</small>' : '') +
+      (!ma ? '<span class="pill new">New milestone</span>' : '') + '</th></tr>' + rows;
+  });
+  let gen = '';
+  GEN.forEach(g => {
+    let rows = '';
+    g.rows.forEach(r => {
+      const st = r[3] || (r[1] === r[2] ? 'same' : 'chg');
+      if (onlyChg && st === 'same') return;
+      rows += '<tr><td class="lab">' + r[0] + (st !== 'same' ? '<span class="pill ' + st + '">' + PILL[st] + '</span>' : '') + '</td>' +
+        '<td class="' + (st === 'rem' ? 'rem' : st === 'chg' ? 'chg' : '') + '"><span class="v">' + r[1] + '</span></td>' +
+        '<td class="' + (st === 'rem' ? 'rem' : st === 'chg' ? 'chg' : '') + '"><span class="v">' + r[2] + '</span></td></tr>';
+    });
+    if (rows) gen += '<tr class="sec"><th colspan="3">' + g.sec + '</th></tr>' + rows;
+  });
+  const legend = '<span class="lg new">New ' + cnt.new + '</span><span class="lg rem">Removed ' + cnt.rem + '</span><span class="lg chg">Changed ' + cnt.chg + '</span><span class="lg same">Same ' + cnt.same + '</span>';
+  $('#summary').innerHTML =
+    '<div class="sumbar"><div class="legend" title="Milestone award rows, 2027 compared with 2026">' + legend + '</div><span class="spacer"></span>' +
+    '<label class="check" for="chg"><input id="chg" type="checkbox"' + (onlyChg ? ' checked' : '') + '> Changes only</label></div>' +
+    '<table class="sum"><colgroup><col style="width:34%"><col style="width:33%"><col style="width:33%"></colgroup>' +
+    '<thead><tr><th>Award</th><th>2026</th><th>2027</th></tr></thead><tbody>' + gen +
+    (ms ? '<tr class="sec"><th colspan="3">Milestone awards</th></tr>' + ms : '') + '</tbody></table>';
+}
+function setTab(t) {
+  const s = t === 'summary';
+  $('#planner').hidden = s; $('#summary').hidden = !s; $('#seg').hidden = s;
+  $('#tabPlan').setAttribute('aria-selected', String(!s));
+  $('#tabSum').setAttribute('aria-selected', String(s));
+  if (s) renderSummary();
+}
+function goTab(t) { try { location.hash = t; } catch (e) {} setTab(t); }
+$('#tabPlan').addEventListener('click', () => goTab('planner'));
+$('#tabSum').addEventListener('click', () => goTab('summary'));
+$('#summary').addEventListener('change', e => {
+  if (e.target.id === 'chg') { onlyChg = e.target.checked; renderSummary(); const c = document.getElementById('chg'); if (c) c.focus(); }
+});
+try { window.addEventListener('hashchange', () => setTab(location.hash === '#summary' ? 'summary' : 'planner')); } catch (e) {}
+
 /* theme */
 function curTheme() {
   const d = document.documentElement.dataset.theme;
@@ -692,6 +845,7 @@ $('#theme').addEventListener('click', () => {
 });
 
 render();
+try { if (location.hash === '#summary') setTab('summary'); } catch (e) {}
 </script>
 
 </body>
