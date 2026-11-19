@@ -150,6 +150,7 @@ h1 { font-family: var(--font-display); font-size: 1.55rem; line-height: 1.15; ma
 .row.bump .val { animation: bump .6s ease-out; color: var(--accent); }
 .row.big .val { font-family: var(--font-display); font-size: 1.15rem; }
 .row.total { font-weight: 700; }
+.rownote { font-size: .75rem; color: var(--muted); padding: 0 0 6px; margin-top: -3px; border-bottom: 1px dashed var(--line); }
 @keyframes bump { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
 .none { color: var(--muted); padding: 10px 0 2px; }
 
@@ -461,7 +462,7 @@ function renderPanel() {
 
 /* ---------- render: haul ---------- */
 const SPEC = [
-  { t: 'Points', rows: [['pts', 'Bonus points', 'n', 'big'], ['next2k', '2K Next Stay awards', 'next']] },
+  { t: 'Points', rows: [['pts', 'Bonus points', 'n', 'big']] },
   { t: 'Free nights', rows: [['fn14', 'Cat 1-4', 'n'], ['fn17', 'Cat 1-7', 'n'], ['fnU', 'Ultimate', 'n']] },
   { t: 'Stay awards', rows: [['su', 'Suite Upgrades', 'n'], ['goh', 'Guest of Honor', 'n'], ['club', 'Club Lounge', 'n'], ['park', 'Free Parking', 'n'], ['miraval', 'Miraval Extra Night', 'n'], ['conc', 'My Hyatt Concierge', 'yes'], ['sky', 'Sky Club passes', 'n']] },
   { t: 'Credits', rows: [['find', 'FIND', '$'], ['spa', 'Spa', '$'], ['thompson', 'Thompson Hotels', '$'], ['premium', 'Premium Suite', '$'], ['ecert', 'Delta eCert', '$'], ['aapref', 'AA Preferred Seat', 'n'], ['aamce', 'AA Main Cabin Extra', 'n']] },
@@ -488,14 +489,21 @@ function renderHaul() {
   SPEC.forEach(g => {
     let rows = '';
     g.rows.forEach(([k, label, kind, cls]) => {
-      let v = null, val = '';
+      let v = null, val = '', note2 = '';
       if (k === 'cc') {
         if (cardOn) { v = 5; val = '5'; }
+      } else if (k === 'pts') {
+        const n2 = T.next2k ? T.next2k.sum : 0;
+        const tot = (T.pts ? T.pts.sum : 0) + 2000 * n2;
+        if (tot > 0) {
+          v = tot; val = fmt(tot);
+          if (n2 > 0) note2 = 'Includes ' + fmt(2000 * n2) + ' from 2K Next Stay. Assumes ' + n2 + (n2 === 1 ? ' stay' : ' stays') + ' at Hyatt Place or a similar brand.';
+        }
       } else if (k === 'gohgift') {
         if (gift && T.goh) { v = T.goh.sum; val = String(v); }
       } else if (T[k]) {
         const t = T[k];
-        if (kind === '$') { v = t.sum; face += t.sum; val = '$' + fmt(t.sum) + (t.cnt > 1 ? ' <small>×' + t.cnt + '</small>' : ''); }
+        if (kind === '$') { v = t.sum; face += t.sum; val = '$' + fmt(t.sum); }
         else if (kind === 'next') { v = t.sum; val = '×' + t.sum + ' <small>' + fmt(t.sum * 2000) + ' pts</small>'; }
         else if (kind === 'yes') { v = 1; val = 'Yes'; }
         else { v = t.sum; val = fmt(t.sum); }
@@ -503,7 +511,7 @@ function renderHaul() {
       if (v !== null) {
         any = true;
         vals[k] = val;
-        rows += '<div class="row' + (cls ? ' ' + cls : '') + (prevVals[k] !== val ? ' bump' : '') + '"><span>' + label + '</span><span class="val">' + val + '</span></div>';
+        rows += '<div class="row' + (cls ? ' ' + cls : '') + (prevVals[k] !== val ? ' bump' : '') + '"><span>' + label + '</span><span class="val">' + val + '</span></div>' + (note2 ? '<div class="rownote">' + note2 + '</div>' : '');
       }
     });
     if (g.t === 'Credits' && face > 0) {
@@ -598,7 +606,7 @@ $('#gift').addEventListener('change', e => { gift = e.target.checked; render(); 
 $('#cc').addEventListener('change', e => { cardOn = e.target.checked; render(); });
 
 /* info dialog: explicit Close only, ESC acts as Close */
-const APP_VERSION = '1.3', APP_UPDATED = 'November 19, 2026';
+const APP_VERSION = '1.4', APP_UPDATED = 'November 19, 2026';
 const DIALOGS = {
   info: {
     title: 'Notes',
@@ -608,6 +616,7 @@ const DIALOGS = {
       '<li>At 60 nights in 2027 the terms say "any two" of five awards. The planner assumes two different ones.</li>' +
       '<li>The 2026 American Airlines options only apply to accounts linked by Nov 15, 2026.</li>' +
       '<li>Credits are assumed to be picked in the same calendar year. Dollar values are face values from the terms. Free nights, upgrades and Guest of Honor have no cash value stated.</li>' +
+      '<li>2K Next Stay is counted as 2,000 points each, assuming you use every one on an eligible stay at Hyatt Place or a similar brand.</li>' +
       '<li>The credit card checkbox adds 5 night credits from the start of the year. Check your card\'s own terms for how and when it awards them.</li>' +
       '<li>Base points follow the same ladder. This planner counts nights.</li></ul>'
   },
