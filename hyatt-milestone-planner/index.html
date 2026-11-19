@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}:root{color-scheme:light}</style>
+<title>Hyatt Milestone Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: a ladder of milestone tiles on top, the open milestone's choices on the left, the running haul on the right. */
+:root {
+  --bg: #F1F4F7;
+  --surface: #FFFFFF;
+  --surface2: #E6EBF0;
+  --ink: #12202B;
+  --muted: #566774;
+  --line: #CFD8DF;
+  --accent: #0A7A74;
+  --accent-ink: #FFFFFF;
+  --accent-bg: #DDF2F0;
+  --gold: #A85F00;
+  --gold-bg: #FBEFD9;
+  --ring: rgba(168, 95, 0, .45);
+  --ring-a: rgba(10, 122, 116, .45);
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D141B; --surface: #15202A; --surface2: #1D2B37; --ink: #E6EDF2; --muted: #94A5B2;
+    --line: #2A3946; --accent: #3CC2B8; --accent-ink: #06201E; --accent-bg: #143531;
+    --gold: #F0B454; --gold-bg: #2C2312; --ring: rgba(240, 180, 84, .5); --ring-a: rgba(60, 194, 184, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D141B; --surface: #15202A; --surface2: #1D2B37; --ink: #E6EDF2; --muted: #94A5B2;
+  --line: #2A3946; --accent: #3CC2B8; --accent-ink: #06201E; --accent-bg: #143531;
+  --gold: #F0B454; --gold-bg: #2C2312; --ring: rgba(240, 180, 84, .5); --ring-a: rgba(60, 194, 184, .5);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.45;
+  padding-block: 18px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+/* header */
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+h1 { font-family: var(--font-display); font-size: 1.55rem; line-height: 1.15; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.hbtns { display: flex; align-items: center; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 7px 14px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.icon-btn { width: 36px; height: 36px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.icon-btn.small { width: 28px; height: 28px; font-size: 14px; border-radius: 50%; color: var(--accent); font-weight: 700; font-family: var(--font-display); }
+
+/* progress + ladder */
+.prog { height: 6px; border-radius: 3px; background: var(--surface2); overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .35s ease; }
+.track { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.node {
+  position: relative; min-height: 92px; padding: 10px 8px 8px; border-radius: 10px; border: 1.5px solid var(--line);
+  background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-align: center;
+}
+.node .n { font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; line-height: 1; }
+.node .u { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.node .stay { font-size: .78rem; font-weight: 600; color: var(--accent); margin-top: 3px; }
+.node .tag { font-size: .68rem; font-weight: 600; border-radius: 99px; padding: 1px 7px; margin-top: 3px; background: var(--gold-bg); color: var(--gold); }
+.node .ic { position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; }
+.node .ic svg { width: 100%; height: 100%; display: block; }
+.node.locked { background: var(--surface2); color: var(--muted); border-style: dashed; }
+.node.locked .n { color: var(--muted); }
+.node.current { border-color: var(--gold); border-width: 2px; animation: ring 1.8s ease-out infinite; }
+.node.ready { border: 2px dashed var(--accent); background: var(--accent-bg); animation: ringA 1.8s ease-out infinite; }
+.node.ready .tag.unl { background: var(--accent); color: var(--accent-ink); }
+.node.ready .ic { color: var(--accent); }
+.node.claimed { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.node.claimed .u, .node.claimed .stay { color: var(--accent-ink); opacity: .85; }
+.node.claimed .tag { background: rgba(255,255,255,.22); color: var(--accent-ink); }
+.node.viewing { box-shadow: 0 0 0 3px var(--accent-bg), 0 0 0 5px var(--accent); }
+.node.shake { animation: shake .3s; }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 var(--ring); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes ringA { 0% { box-shadow: 0 0 0 0 var(--ring-a); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.mt.ready { border: 2px dashed var(--accent); background: var(--accent-bg); }
+.empty .btn { margin-top: 12px; }
+
+/* toolbar */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 14px; font-weight: 600; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.warn { border-color: var(--gold); color: var(--gold); }
+.check { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); cursor: pointer; }
+.check input { width: 17px; height: 17px; accent-color: var(--accent); margin: 0; }
+.spacer { flex: 1 1 auto; }
+
+/* main columns */
+.cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.card h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 2px; line-height: 1.2; }
+.card h2 small { font-family: var(--font-body); font-weight: 400; font-size: .8rem; color: var(--muted); margin-left: 6px; }
+.sub { color: var(--muted); margin: 0 0 12px; }
+.sub b { color: var(--accent); }
+.fixed { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; }
+.lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+.chip { background: var(--gold-bg); color: var(--gold); border-radius: 6px; padding: 3px 9px; font-weight: 600; font-size: .85rem; }
+.grp { margin-bottom: 14px; }
+.grp .lbl { display: block; margin-bottom: 6px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; }
+.opt {
+  position: relative; text-align: left; border: 1.5px solid var(--line); background: var(--surface); border-radius: 9px;
+  padding: 10px 30px 10px 12px; min-height: 52px; display: flex; flex-direction: column; justify-content: center; gap: 2px; font-weight: 600;
+}
+.opt .t { font-size: .72rem; font-weight: 600; color: var(--accent); }
+.opt .t.aa { color: var(--muted); }
+.opt .ck { position: absolute; top: 9px; right: 9px; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line); color: transparent; display: flex; align-items: center; justify-content: center; }
+.opt .ck svg { width: 10px; height: 10px; }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.opt[aria-pressed="true"] .ck { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.opts.ro .opt { cursor: default; opacity: .5; }
+.opts.ro .opt[aria-pressed="true"] { opacity: 1; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 12px; }
+.hint { color: var(--muted); }
+.hint b { color: var(--accent); }
+.empty { color: var(--muted); padding: 22px 4px; text-align: center; }
+.empty strong { color: var(--gold); }
+
+/* haul */
+.haul { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tile { background: var(--surface2); border-radius: 9px; padding: 9px 10px; min-width: 0; }
+.tile .v { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .v.acc { color: var(--accent); }
+.tile .k { font-size: .7rem; color: var(--muted); line-height: 1.25; margin-top: 2px; }
+.hgroup { margin-top: 2px; }
+.hgroup .lbl { display: block; padding: 8px 0 4px; border-bottom: 1px solid var(--line); }
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+.row:last-child { border-bottom: 0; }
+.row .val { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.row .val small { color: var(--muted); font-weight: 400; }
+.row.bump .val { animation: bump .6s ease-out; color: var(--accent); }
+.row.big .val { font-family: var(--font-display); font-size: 1.15rem; }
+.row.total { font-weight: 700; }
+@keyframes bump { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.none { color: var(--muted); padding: 10px 0 2px; }
+
+/* info dialog */
+.veil { position: fixed; inset: 0; background: rgba(5, 10, 15, .6); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.dlg { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; max-width: 580px; width: 100%; max-height: 86vh; overflow: auto; padding: 18px; }
+.dlg h2 { font-family: var(--font-display); margin: 0 0 8px; font-size: 1.2rem; }
+.dlg ul { margin: 0 0 14px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.dlg .end { display: flex; justify-content: flex-end; margin-top: 14px; }
+.dlg .end + * { margin: 0; }
+.dlg p { margin: 0 0 10px; }
+.dlg h3 { font-family: var(--font-display); font-size: .95rem; margin: 14px 0 6px; }
+.about { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 0; }
+.about dt { color: var(--muted); font-weight: 600; }
+.about dd { margin: 0; user-select: all; overflow-wrap: anywhere; }
+
+/* help infographic: four steps highlight in turn */
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 4px 0 8px; }
+.step { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 6px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; animation: hl 8s infinite; background: var(--surface); }
+.step:nth-child(2) { animation-delay: 2s; }
+.step:nth-child(3) { animation-delay: 4s; }
+.step:nth-child(4) { animation-delay: 6s; }
+.step .cap { font-size: .75rem; font-weight: 600; line-height: 1.25; }
+.step .art { min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
+.mt { width: 40px; height: 44px; border-radius: 8px; border: 2px solid var(--gold); font-family: var(--font-display); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.mt.done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.mt.lock { border: 1.5px dashed var(--line); color: var(--muted); background: var(--surface2); }
+.mo { font-size: .68rem; font-weight: 600; border: 1.5px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+.mo.on { border-color: var(--accent); background: var(--accent-bg); }
+.mb { font-size: .75rem; font-weight: 600; border-radius: 6px; padding: 5px 12px; background: var(--accent); color: var(--accent-ink); }
+.arrow { color: var(--muted); font-weight: 700; }
+.math { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; background: var(--surface2); border-radius: 10px; padding: 10px; margin-bottom: 4px; font-weight: 600; }
+.math b { color: var(--accent); font-family: var(--font-display); font-size: 1.1rem; }
+@keyframes hl { 0%, 22% { border-color: var(--gold); background: var(--gold-bg); transform: translateY(-2px); } 26%, 100% { border-color: var(--line); background: var(--surface); transform: none; } }
+@media (max-width: 480px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .step { animation: none; } }
+
+@media (max-width: 820px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .haul { position: static; }
+  .track { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+  .node .n { font-size: 1.45rem; }
+}
+@media (max-width: 420px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) {
+  .node.current, .node.ready, .node.shake, .row.bump .val { animation: none; }
+  .prog i { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Hyatt Milestone Planner</h1>
+    <div class="hbtns">
+      <div class="seg" role="group" aria-label="Rule set">
+        <button id="r2026" type="button" aria-pressed="false">2026</button>
+        <button id="r2027" type="button" aria-pressed="true">2027</button>
+      </div>
+      <button id="help" class="btn" type="button">Help</button>
+      <button id="about" class="btn" type="button">About</button>
+      <button id="theme" class="icon-btn" type="button" title="Toggle Light / Dark" aria-label="Toggle Light / Dark">◐</button>
+    </div>
+  </header>
+
+  <div class="prog" aria-hidden="true"><i id="progbar"></i></div>
+  <div id="track" class="track"></div>
+
+  <div class="toolbar">
+    <button id="undo" class="btn" type="button" title="Re-lock the latest milestone">Undo</button>
+    <button id="reset" class="btn" type="button">Reset</button>
+    <label class="check" for="cc"><input id="cc" type="checkbox"> Credit card (+5 night credits)</label>
+    <label class="check" for="gift"><input id="gift" type="checkbox"> Gift Guest of Honor (+1 night each)</label>
+    <span class="spacer"></span>
+    <button id="info" class="icon-btn small" type="button" title="More info" aria-label="More info">i</button>
+  </div>
+
+  <div class="cols">
+    <section id="panel" class="card" aria-live="polite"></section>
+    <aside class="card haul" id="haul"></aside>
+  </div>
+</div>
+
+<div id="veil" class="veil" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgt">
+    <h2 id="dlgt"></h2>
+    <div id="dlgbody"></div>
+    <div class="end"><button id="dlgclose" class="btn primary" type="button">Close</button></div>
+  </div>
+</div>
+
+<script>
+/* ---------- data ---------- */
+const o = (label, items, tag, aa) => ({ label, items, tag, aa });
+const tq = n => o(n + (n === 1 ? ' night credit' : ' night credits'), [['tqn', n]], 'Saves ' + n + (n === 1 ? ' night' : ' nights'));
+const find = d => o('$' + d + ' FIND credit', [['find', d]]);
+const spa = () => o('$30 spa credit', [['spa', 30]], 'Inclusive resorts');
+const club = () => o('2 Club Lounge awards', [['club', 2]]);
+const next2k = () => o('2K Next Stay', [['next2k', 1]], '2,000 points after a stay');
+const ecert = d => o('$' + d + ' Delta eCert', [['ecert', d]]);
+const su = n => o(n + (n === 1 ? ' Suite Upgrade' : ' Suite Upgrades'), [['su', n]]);
+const pts = n => o(n.toLocaleString('en-US') + ' points', [['pts', n]]);
+const park = () => o('Free Parking Award', [['park', 1]]);
+const conc = () => o('My Hyatt Concierge', [['conc', 1]]);
+const sky = () => o('2 Sky Club passes', [['sky', 2]]);
+const mir = () => o('Miraval Extra Night', [['miraval', 1]]);
+const thom = d => o('$' + d + ' Thompson credit', [['thompson', d]]);
+const prem = () => o('$500 Premium Suite credit', [['premium', 500]]);
+const fn14 = n => o(n === 1 ? 'Cat 1-4 free night' : n + ' × Cat 1-4 free nights', [['fn14', n]]);
+const fn17 = n => o(n === 1 ? 'Cat 1-7 free night' : n + ' × Cat 1-7 free nights', [['fn17', n]]);
+const fnU = () => o('Ultimate free night', [['fnU', 1]], 'Cat 1-8, Miraval');
+const dGold = () => o('Delta Gold Medallion', [['status', 'Delta Gold Medallion']]);
+const dPlat = () => o('Delta Platinum Medallion', [['status', 'Delta Platinum Medallion']]);
+const aaPref = () => o('2 AA Preferred Seat coupons', [['aapref', 2]], 'AA-linked only', true);
+const aaMce = () => o('2 AA Main Cabin Extra coupons', [['aamce', 2]], 'AA-linked only', true);
+const aaGold = () => o('AAdvantage Gold status', [['status', 'AAdvantage Gold']], 'AA-linked only', true);
+const aaPlat = () => o('AAdvantage Platinum status', [['status', 'AAdvantage Platinum']], 'AA-linked only', true);
+const G1 = opts => [{ title: 'Choose 1', pick: 1, opts }];
+
+function build(rules) {
+  const hi = (n, extra) => Object.assign({ n }, extra);
+  if (rules === '2026') {
+    const M20 = [club(), next2k(), find(25), aaPref()];
+    const late = [su(1), pts(10000), mir(), aaPlat()];
+    const list = [
+      hi(20, { bp: '35,000', groups: G1(M20) }),
+      hi(30, { bp: '50,000', status: 'Explorist', fixed: [['fn14', 1]], groups: [{ title: 'Plus any 20-night award', pick: 1, opts: M20 }] }),
+      hi(40, { bp: '65,000', fixed: [['goh', 1]], groups: G1([su(1), pts(5000), find(150), aaMce()]) }),
+      hi(50, { bp: '80,000', groups: G1([su(2), pts(5000), find(150), aaMce()]) }),
+      hi(60, { bp: '100,000', status: 'Globalist', fixed: [['goh', 2], ['su', 2], ['fn17', 1], ['conc', 1]], groups: [] })
+    ];
+    [70, 80, 90].forEach(n => list.push(hi(n, { fixed: [['goh', 1]], groups: G1([su(1), pts(10000), find(300), aaGold()]) })));
+    list.push(hi(100, { fixed: [['fn17', 1]], groups: G1(late) }));
+    [110, 120, 130, 140].forEach(n => list.push(hi(n, { fixed: [['goh', 1]], groups: G1(late) })));
+    list.push(hi(150, { fixed: [['fnU', 1]], groups: G1(late) }));
+    return list;
+  }
+  const M20 = [tq(2), club(), next2k(), spa(), ecert(25)];
+  const late = [su(1), pts(10000), mir(), dGold()];
+  const list = [
+    hi(10, { bp: '20,000', status: 'Discoverist', groups: G1([tq(1), find(25), spa()]) }),
+    hi(20, { bp: '35,000', groups: G1(M20) }),
+    hi(30, { bp: '50,000', status: 'Explorist', groups: [{ title: 'Free night or points', pick: 1, opts: [fn14(1), pts(10000)] }, { title: 'Plus any 20-night award', pick: 1, opts: M20 }] }),
+    hi(40, { bp: '65,000', fixed: [['goh', 1]], groups: G1([tq(5), su(1), pts(5000), thom(200), ecert(75)]) }),
+    hi(50, { bp: '80,000', groups: G1([su(1), pts(5000), thom(200), ecert(75)]) }),
+    hi(60, { bp: '100,000', status: 'Globalist', fixed: [['goh', 2]], groups: [
+      { title: 'Free nights', pick: 1, opts: [fn17(1), fn14(2)] },
+      { title: 'Choose 2 (different)', pick: 2, opts: [su(2), pts(7500), park(), conc(), ecert(100)] }
+    ] })
+  ];
+  [70, 80, 90].forEach(n => list.push(hi(n, { fixed: [['goh', 1]], groups: G1([su(1), pts(10000), park(), sky()]) })));
+  list.push(hi(100, { groups: [
+    { title: 'Free nights or credit', pick: 1, opts: [fn17(1), fn14(2), prem()] },
+    { title: 'Choose 1', pick: 1, opts: late }
+  ] }));
+  [110, 120, 130, 140].forEach(n => list.push(hi(n, { fixed: [['goh', 1]], groups: G1(late) })));
+  list.push(hi(150, { groups: [
+    { title: 'Free nights', pick: 1, opts: [fnU(), fn17(2)] },
+    { title: 'Choose 1', pick: 1, opts: [su(1), pts(10000), mir(), dPlat()] }
+  ] }));
+  return list;
+}
+
+/* ---------- state ---------- */
+let rules = '2027', M = build(rules), claimed = [], openIdx = null, draft = [], gift = false, cardOn = false, unlocked = false, armed = false, armTimer = null, note = '';
+let prevVals = {};
+const $ = s => document.querySelector(s);
+const fmt = n => n.toLocaleString('en-US');
+const ICON_CK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_OPEN = '<svg viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.5 7V5a2.5 2.5 0 0 1 4.7-1.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const ICON_LOCK ='<svg viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+
+function itemText([k, n]) {
+  switch (k) {
+    case 'pts': return fmt(n) + ' points';
+    case 'next2k': return '2K Next Stay';
+    case 'fn14': return n === 1 ? 'Cat 1-4 free night' : n + ' × Cat 1-4 free nights';
+    case 'fn17': return n === 1 ? 'Cat 1-7 free night' : n + ' × Cat 1-7 free nights';
+    case 'fnU': return 'Ultimate free night';
+    case 'su': return n + (n === 1 ? ' Suite Upgrade' : ' Suite Upgrades');
+    case 'goh': return n + ' Guest of Honor';
+    case 'club': return n + ' Club Lounge awards';
+    case 'park': return 'Free Parking Award';
+    case 'conc': return 'My Hyatt Concierge';
+    case 'miraval': return 'Miraval Extra Night';
+    case 'sky': return n + ' Sky Club passes';
+    case 'tqn': return n + (n === 1 ? ' night credit' : ' night credits');
+    case 'find': return '$' + n + ' FIND credit';
+    case 'spa': return '$' + n + ' spa credit';
+    case 'thompson': return '$' + n + ' Thompson credit';
+    case 'premium': return '$' + n + ' Premium Suite credit';
+    case 'ecert': return '$' + n + ' Delta eCert';
+    case 'aapref': return n + ' AA Preferred Seat coupons';
+    case 'aamce': return n + ' AA Main Cabin Extra coupons';
+    case 'status': return n;
+  }
+  return k;
+}
+
+/* ---------- calculations ---------- */
+function itemsOf(e) {
+  const m = M[e.idx];
+  let it = (m.fixed || []).slice();
+  m.groups.forEach((g, gi) => (e.picks[gi] || []).forEach(oi => { it = it.concat(g.opts[oi].items); }));
+  return it;
+}
+function creditsOfItems(items) {
+  let c = 0;
+  items.forEach(([k, n]) => { if (k === 'tqn') c += n; if (k === 'goh' && gift) c += n; });
+  return c;
+}
+function prefix(k) {
+  let s = cardOn ? 5 : 0;
+  for (let j = 0; j < Math.min(k, claimed.length); j++) s += creditsOfItems(itemsOf(claimed[j]));
+  return s;
+}
+const stay = k => Math.max(0, M[k].n - prefix(k));
+
+function totals() {
+  const T = {}, st = [];
+  claimed.forEach(e => itemsOf(e).forEach(([k, n]) => {
+    if (k === 'status') { st.push(n); return; }
+    if (!T[k]) T[k] = { sum: 0, cnt: 0 };
+    T[k].sum += n; T[k].cnt++;
+  }));
+  return { T, st };
+}
+
+/* ---------- render: ladder ---------- */
+function renderTrack() {
+  const c = claimed.length;
+  $('#progbar').style.width = (c / M.length * 100) + '%';
+  $('#track').innerHTML = M.map((m, i) => {
+    const state = i < c ? 'claimed' : i === c ? (unlocked ? 'current' : 'ready') : 'locked';
+    const s = stay(i);
+    const saved = s < m.n;
+    const view = openIdx === i ? ' viewing' : '';
+    const icon = state === 'claimed' ? ICON_CK : state === 'locked' ? ICON_LOCK : state === 'ready' ? ICON_OPEN : '';
+    const label = m.n + ' nights, ' + (state === 'claimed' ? 'claimed' : state === 'current' ? 'choose your awards' : state === 'ready' ? 'ready to unlock, click to unlock' : 'locked');
+    return '<button type="button" class="node ' + state + view + '" data-node="' + i + '" aria-label="' + label + '">' +
+      (icon ? '<span class="ic">' + icon + '</span>' : '') +
+      '<span class="n">' + m.n + '</span><span class="u">nights</span>' +
+      (saved ? '<span class="stay" title="Real nights needed after your claimed credits">stay ' + s + '</span>' : '') +
+      (state === 'ready' ? '<span class="tag unl">Unlock</span>' : '') +
+      (m.status ? '<span class="tag">' + m.status + '</span>' : '') +
+      '</button>';
+  }).join('');
+}
+
+/* ---------- render: milestone panel ---------- */
+function draftItems(idx) {
+  const m = M[idx];
+  let it = (m.fixed || []).slice();
+  m.groups.forEach((g, gi) => (draft[gi] || []).forEach(oi => { it = it.concat(g.opts[oi].items); }));
+  return it;
+}
+function needPicks(idx) { return M[idx].groups.reduce((a, g) => a + g.pick, 0); }
+function madePicks() { return draft.reduce((a, d) => a + d.length, 0); }
+
+function renderPanel() {
+  const p = $('#panel');
+  const c = claimed.length;
+  if (openIdx === null) {
+    if (c === M.length) {
+      p.innerHTML = '<div class="empty"><strong>All ' + M.length + ' milestones claimed.</strong><br>Check the haul, or Undo to try a different path.</div>';
+    } else {
+      p.innerHTML = '<div class="empty">' + (note ? note + '<br>' : '') + 'Milestone <strong>' + M[c].n + '</strong> ' + (unlocked ? 'is open.' : 'is ready to unlock.') +
+        '<br><button type="button" id="unlock" class="btn primary">' + (unlocked ? 'Open ' : 'Unlock ') + M[c].n + '</button></div>';
+    }
+    return;
+  }
+  const m = M[openIdx];
+  const viewing = openIdx < c;
+  const s = stay(openIdx), cr = m.n - s;
+  let h = '<h2>' + m.n + ' nights' + (m.bp ? '<small>or ' + m.bp + ' base points</small>' : '') + '</h2>';
+  h += '<p class="sub">' + (cr > 0 ? 'Stay <b>' + s + ' real nights</b>. Credits cover ' + cr + '.' : 'Stay ' + m.n + ' nights.') +
+    (m.status ? ' Also earns ' + m.status + ' status.' : '') + '</p>';
+  if (m.fixed && m.fixed.length) {
+    h += '<div class="fixed"><span class="lbl">Included</span>' + m.fixed.map(i => '<span class="chip">' + itemText(i) + '</span>').join('') + '</div>';
+  }
+  m.groups.forEach((g, gi) => {
+    const sel = viewing ? (claimed[openIdx].picks[gi] || []) : (draft[gi] || []);
+    h += '<div class="grp"><span class="lbl">' + g.title + '</span><div class="opts">';
+    g.opts.forEach((op, oi) => {
+      const on = sel.indexOf(oi) >= 0;
+      h += '<button type="button" class="opt" data-g="' + gi + '" data-o="' + oi + '" aria-pressed="' + on + '">' +
+        '<span>' + op.label + '</span>' + (op.tag ? '<span class="t' + (op.aa ? ' aa' : '') + '">' + op.tag + '</span>' : '') +
+        '<span class="ck">' + ICON_CK + '</span></button>';
+    });
+    h += '</div></div>';
+  });
+  if (!viewing) {
+    const need = needPicks(openIdx), made = madePicks(), left = need - made;
+    let hint;
+    if (left > 0) hint = 'Pick <b>' + left + '</b> more';
+    else {
+      const gain = creditsOfItems(draftItems(openIdx));
+      hint = openIdx + 1 < M.length
+        ? 'Next milestone: stay <b>' + Math.max(0, M[openIdx + 1].n - prefix(openIdx) - gain) + '</b> real nights'
+        : 'Last milestone';
+    }
+    h += '<div class="actions"><span class="hint">' + hint + '</span><button type="button" id="claim" class="btn primary"' + (left > 0 ? ' disabled' : '') + '>Claim</button></div>';
+  } else {
+    h += '<div class="actions"><span class="hint">Claimed. Tap another option to change it.</span></div>';
+  }
+  p.innerHTML = h;
+}
+
+/* ---------- render: haul ---------- */
+const SPEC = [
+  { t: 'Points', rows: [['pts', 'Bonus points', 'n', 'big'], ['next2k', '2K Next Stay awards', 'next']] },
+  { t: 'Free nights', rows: [['fn14', 'Cat 1-4', 'n'], ['fn17', 'Cat 1-7', 'n'], ['fnU', 'Ultimate', 'n']] },
+  { t: 'Stay awards', rows: [['su', 'Suite Upgrades', 'n'], ['goh', 'Guest of Honor', 'n'], ['club', 'Club Lounge', 'n'], ['park', 'Free Parking', 'n'], ['miraval', 'Miraval Extra Night', 'n'], ['conc', 'My Hyatt Concierge', 'yes'], ['sky', 'Sky Club passes', 'n']] },
+  { t: 'Credits', rows: [['find', 'FIND', '$'], ['spa', 'Spa', '$'], ['thompson', 'Thompson Hotels', '$'], ['premium', 'Premium Suite', '$'], ['ecert', 'Delta eCert', '$'], ['aapref', 'AA Preferred Seat', 'n'], ['aamce', 'AA Main Cabin Extra', 'n']] },
+  { t: 'Night credits', rows: [['cc', 'Credit card', 'n'], ['tqn', 'Qualifying nights', 'n'], ['gohgift', 'From gifted Guest of Honor', 'n']] }
+];
+
+function renderHaul() {
+  const c = claimed.length;
+  const { T, st } = totals();
+  const credits = prefix(c);
+  const lastReal = c > 0 ? stay(c - 1) : 0;
+  let nextTile;
+  if (c < M.length) {
+    const ns = stay(c);
+    nextTile = '<div class="v acc">' + ns + '</div><div class="k">real nights for ' + M[c].n + (c > 0 ? ' (+' + Math.max(0, ns - lastReal) + ' more)' : '') + '</div>';
+  } else nextTile = '<div class="v acc">Done</div><div class="k">all claimed</div>';
+  let h = '<div class="tiles">' +
+    '<div class="tile"><div class="v">' + lastReal + '</div><div class="k">' + (c > 0 ? 'real nights to reach ' + M[c - 1].n : 'nights stayed') + '</div></div>' +
+    '<div class="tile"><div class="v acc">' + credits + '</div><div class="k">nights from credits</div></div>' +
+    '<div class="tile">' + nextTile + '</div></div>';
+
+  const vals = {};
+  let any = false, face = 0;
+  SPEC.forEach(g => {
+    let rows = '';
+    g.rows.forEach(([k, label, kind, cls]) => {
+      let v = null, val = '';
+      if (k === 'cc') {
+        if (cardOn) { v = 5; val = '5'; }
+      } else if (k === 'gohgift') {
+        if (gift && T.goh) { v = T.goh.sum; val = String(v); }
+      } else if (T[k]) {
+        const t = T[k];
+        if (kind === '$') { v = t.sum; face += t.sum; val = '$' + fmt(t.sum) + (t.cnt > 1 ? ' <small>×' + t.cnt + '</small>' : ''); }
+        else if (kind === 'next') { v = t.sum; val = '×' + t.sum + ' <small>' + fmt(t.sum * 2000) + ' pts</small>'; }
+        else if (kind === 'yes') { v = 1; val = 'Yes'; }
+        else { v = t.sum; val = fmt(t.sum); }
+      }
+      if (v !== null) {
+        any = true;
+        vals[k] = val;
+        rows += '<div class="row' + (cls ? ' ' + cls : '') + (prevVals[k] !== val ? ' bump' : '') + '"><span>' + label + '</span><span class="val">' + val + '</span></div>';
+      }
+    });
+    if (g.t === 'Credits' && face > 0) {
+      rows += '<div class="row total"><span>Face value</span><span class="val">$' + fmt(face) + '</span></div>';
+    }
+    if (rows) h += '<div class="hgroup"><span class="lbl">' + g.t + '</span>' + rows + '</div>';
+  });
+  if (st.length) {
+    any = true;
+    let rows = '';
+    st.forEach((s, i) => { const k = 'st' + i; vals[k] = s; rows += '<div class="row' + (prevVals[k] !== s ? ' bump' : '') + '"><span>' + s + '</span><span class="val">Yes</span></div>'; });
+    h += '<div class="hgroup"><span class="lbl">Status</span>' + rows + '</div>';
+  }
+  if (!any) h += '<div class="none">Your haul shows up here as you claim.</div>';
+  prevVals = vals;
+  $('#haul').innerHTML = h;
+}
+
+function render() {
+  renderTrack(); renderPanel(); renderHaul();
+  $('#undo').disabled = claimed.length === 0 && !unlocked;
+  $('#r2026').setAttribute('aria-pressed', rules === '2026');
+  $('#r2027').setAttribute('aria-pressed', rules === '2027');
+  $('#reset').textContent = armed ? 'Tap again to reset' : 'Reset';
+  $('#reset').classList.toggle('warn', armed);
+}
+
+/* ---------- actions ---------- */
+function openNode(i) {
+  const c = claimed.length;
+  if (i > c) {
+    note = (unlocked ? 'Claim ' : 'Unlock ') + M[c].n + ' first.';
+    openIdx = null; render();
+    const el = document.querySelector('[data-node="' + i + '"]');
+    if (el) { el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 350); }
+    return;
+  }
+  note = '';
+  if (i === c && !unlocked) { unlocked = true; draft = M[i].groups.map(() => []); }
+  openIdx = i; render();
+}
+function pick(gi, oi) {
+  if (openIdx === null) return;
+  const g = M[openIdx].groups[gi];
+  if (openIdx < claimed.length) {
+    const cp = claimed[openIdx].picks[gi];
+    if (cp.indexOf(oi) >= 0) return;
+    if (cp.length >= g.pick) cp.shift();
+    cp.push(oi); render(); return;
+  }
+  if (openIdx !== claimed.length) return;
+  const d = draft[gi];
+  const at = d.indexOf(oi);
+  if (at >= 0) d.splice(at, 1);
+  else { if (d.length >= g.pick) d.shift(); d.push(oi); }
+  render();
+}
+function claim() {
+  if (openIdx !== claimed.length || madePicks() < needPicks(openIdx)) return;
+  claimed.push({ idx: openIdx, picks: draft.map(d => d.slice()) });
+  openIdx = null; draft = []; unlocked = false;
+  note = 'Claimed ' + M[claimed.length - 1].n + '.';
+  render();
+}
+function undo() {
+  if (unlocked) { unlocked = false; draft = []; openIdx = null; note = 'Locked ' + M[claimed.length].n + ' again.'; }
+  else if (claimed.length) { const e = claimed.pop(); openIdx = null; draft = []; note = 'Locked ' + M[e.idx].n + ' again.'; }
+  else return;
+  render();
+}
+function reset() {
+  if (!armed) { armed = true; render(); armTimer = setTimeout(() => { armed = false; render(); }, 3000); return; }
+  clearTimeout(armTimer); armed = false; claimed = []; openIdx = null; draft = []; unlocked = false; note = ''; prevVals = {}; render();
+}
+function setRules(r) {
+  if (r === rules) return;
+  rules = r; M = build(r); claimed = []; openIdx = null; draft = []; unlocked = false; note = ''; prevVals = {}; render();
+}
+
+$('#track').addEventListener('click', e => { const b = e.target.closest('[data-node]'); if (b) openNode(+b.dataset.node); });
+$('#panel').addEventListener('click', e => {
+  const b = e.target.closest('.opt');
+  if (b) { pick(+b.dataset.g, +b.dataset.o); return; }
+  if (e.target.closest('#unlock')) { openNode(claimed.length); return; }
+  if (e.target.closest('#claim')) claim();
+});
+$('#undo').addEventListener('click', undo);
+$('#reset').addEventListener('click', reset);
+$('#r2026').addEventListener('click', () => setRules('2026'));
+$('#r2027').addEventListener('click', () => setRules('2027'));
+$('#gift').addEventListener('change', e => { gift = e.target.checked; render(); });
+$('#cc').addEventListener('change', e => { cardOn = e.target.checked; render(); });
+
+/* info dialog: explicit Close only, ESC acts as Close */
+const APP_VERSION = '1.3', APP_UPDATED = 'November 19, 2026';
+const DIALOGS = {
+  info: {
+    title: 'Notes',
+    html: '<ul>' +
+      '<li>Night credits count as real nights toward milestones and status. They only help once you pick them, so each tile shows the real nights you need after the credits you have claimed.</li>' +
+      '<li>Gifting a Guest of Honor award earns you 1 qualifying night once your guest finishes the stay. Turn on the checkbox if you will gift every one.</li>' +
+      '<li>At 60 nights in 2027 the terms say "any two" of five awards. The planner assumes two different ones.</li>' +
+      '<li>The 2026 American Airlines options only apply to accounts linked by Nov 15, 2026.</li>' +
+      '<li>Credits are assumed to be picked in the same calendar year. Dollar values are face values from the terms. Free nights, upgrades and Guest of Honor have no cash value stated.</li>' +
+      '<li>The credit card checkbox adds 5 night credits from the start of the year. Check your card\'s own terms for how and when it awards them.</li>' +
+      '<li>Base points follow the same ladder. This planner counts nights.</li></ul>'
+  },
+  help: {
+    title: 'Help',
+    html:
+      '<div class="flow" aria-label="How it works in four steps">' +
+        '<div class="step"><div class="art"><span class="mt ready">20</span></div><span class="cap">1. Click the ready milestone to unlock it</span></div>' +
+        '<div class="step"><div class="art"><span class="mo on">2 night credits</span><span class="mo">Club Lounge</span></div><span class="cap">2. Pick your awards</span></div>' +
+        '<div class="step"><div class="art"><span class="mb">Claim</span></div><span class="cap">3. Claim them</span></div>' +
+        '<div class="step"><div class="art"><span class="mt done">20</span><span class="arrow">›</span><span class="mt ready">30</span></div><span class="cap">4. The next one is ready. Click to unlock</span></div>' +
+      '</div>' +
+      '<div class="math"><span>Milestone 40</span><span class="arrow">−</span><span>5 night credits</span><span class="arrow">=</span><span>stay <b>35</b> real nights</span></div>' +
+      '<h3>What it does</h3>' +
+      '<p>Plan which award to take at each World of Hyatt milestone. The planner adds up what you collect and shows how many real nights you need to stay.</p>' +
+      '<h3>How to use it</h3>' +
+      '<ul>' +
+        '<li>The tile marked Unlock is ready. Click it to open it, pick, then Claim. The next tile then becomes ready, and you click it to unlock.</li>' +
+        '<li>Claim needs every pick made. Some milestones ask for two picks.</li>' +
+        '<li>Click a claimed tile to change its picks. The haul and nights update right away.</li>' +
+        '<li>Undo only re-locks. It locks the latest milestone again and clears its picks. Reset clears everything (tap twice).</li>' +
+        '<li>2026 and 2027 swap the rule set. Your picks clear when you switch.</li>' +
+      '</ul>' +
+      '<h3>Reading the numbers</h3>' +
+      '<ul>' +
+        '<li>"Stay N" on a tile is the real nights you need after the credits you have already claimed.</li>' +
+        '<li>Milestone night credits only exist in 2027. They shorten every milestone after the one that gives them.</li>' +
+        '<li>Credit card adds 5 night credits before the first milestone, in either rule set.</li>' +
+        '<li>Gift Guest of Honor adds 1 night for each award you give away. Leave it off if you will use them yourself.</li>' +
+        '<li>Credits show face value. Free nights and upgrades have no cash value in the terms.</li>' +
+      '</ul>' +
+      '<p>If you are chasing Globalist at 60 nights, the 5 night credits at 40 are the pick that gets you there sooner.</p>'
+  },
+  about: {
+    title: 'About',
+    html: '<dl class="about">' +
+      '<dt>Created By</dt><dd>Michael Wang</dd>' +
+      '<dt>Email</dt><dd>pokemonstation@gmail.com</dd>' +
+      '<dt>Version</dt><dd>' + APP_VERSION + '</dd>' +
+      '<dt>Last Updated On</dt><dd>' + APP_UPDATED + '</dd></dl>'
+  }
+};
+let dlgOpener = null;
+function showDlg(key, opener) {
+  const d = DIALOGS[key];
+  $('#dlgt').textContent = d.title;
+  $('#dlgbody').innerHTML = d.html;
+  dlgOpener = opener || null;
+  $('#veil').hidden = false;
+  $('#dlgclose').focus();
+}
+function closeDlg() { $('#veil').hidden = true; if (dlgOpener) dlgOpener.focus(); }
+['info', 'help', 'about'].forEach(k => $('#' + k).addEventListener('click', e => showDlg(k, e.currentTarget)));
+$('#dlgclose').addEventListener('click', closeDlg);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#veil').hidden) closeDlg(); });
+
+/* theme */
+function curTheme() {
+  const d = document.documentElement.dataset.theme;
+  if (d) return d;
+  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  document.body.classList.toggle('theme-dark', t === 'dark');
+  document.body.classList.toggle('theme-light', t === 'light');
+}
+try { const s = localStorage.getItem('hmp-theme'); if (s === 'dark' || s === 'light') applyTheme(s); } catch (e) {}
+$('#theme').addEventListener('click', () => {
+  const t = curTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(t);
+  try { localStorage.setItem('hmp-theme', t); } catch (e) {}
+});
+
+render();
+</script>
+
+</body>
+</html>
